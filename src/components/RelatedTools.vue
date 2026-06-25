@@ -22,12 +22,29 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
 })
+
+let touchStartX = 0
+
+function onTouchStart(e) {
+  touchStartX = e.touches[0].clientX
+}
+
+function onTouchEnd(e) {
+  const dx = e.changedTouches[0].clientX - touchStartX
+  if (Math.abs(dx) < 40) return
+  if (dx < 0 && currentCard.value < relatedCards.length - 1) currentCard.value++
+  else if (dx > 0 && currentCard.value > 0) currentCard.value--
+}
 </script>
 
 <template>
   <aside class="related-tools" aria-label="你可能也會有興趣的 AI 小工具">
     <h3>你可能感興趣的 AI 小工具</h3>
-    <div class="related-grid">
+    <div
+      class="related-grid"
+      @touchstart.passive="onTouchStart"
+      @touchend.passive="onTouchEnd"
+    >
       <a
         v-for="(card, i) in relatedCards"
         :key="card.href"

@@ -30,7 +30,7 @@ ${form.role}
 【職缺 JD / 工作內容】
 ${form.jobDescription}
 
-【一頁式履歷重點】
+【履歷重點】
 ${form.background || '未提供。請根據職缺需求，給出通用但具體的準備方向。'}
 
 【想加強的方向】
@@ -44,7 +44,7 @@ ${form.focus}
 用 3 到 5 點整理這個職缺可能重視的能力、工作重點與面試官可能在意的事。
 
 ## 2. 履歷對照分析
-根據我的一頁式履歷重點，分析哪些經驗最適合拿來對應這個職缺。
+根據我的履歷重點，分析哪些經驗最適合拿來對應這個職缺。
 
 ## 3. 準備策略
 依照「${form.focus}」這個方向，列出我應該優先準備的內容。
@@ -56,7 +56,10 @@ ${form.focus}
 建議我如何介紹自己的作品、經驗、轉職動機或學習歷程。
 
 ## 6. 面試前檢查清單
-列出面試前一天可以檢查的事項。`;
+列出面試前一天可以檢查的事項。
+
+## 7. 請將你提供的資訊製作成MD檔
+方便後續將資訊深入利用。`;
 }
 
 async function handleSubmit() {
@@ -91,7 +94,7 @@ async function copyPrompt() {
       <div class="hero-copy">
         <p class="eyebrow">Interview Prep Tool</p>
         <h1>面試準備機</h1>
-        <p>貼上職缺資訊和一頁式履歷重點，整理成可測試的面試準備 Prompt。</p>
+        <p>貼上職缺資訊和履歷重點，整理成可測試的面試準備 Prompt。</p>
       </div>
     </section>
 
@@ -121,12 +124,12 @@ async function copyPrompt() {
         </label>
 
         <label>
-          一頁式履歷重點
+          履歷重點
           <textarea v-model="form.background" rows="8" placeholder="建議貼：1. 你的定位 2. 主要技能 3. 代表作品 4. 工作/專案經驗 5. 想強調的優勢"></textarea>
         </label>
 
         <div class="note-box">
-          <strong>一頁式履歷可以這樣貼：</strong>
+          <strong>履歷重點可以這樣貼：</strong>
           <p>不用貼完整格式，直接貼重點即可，例如「我是誰、會什麼、做過哪些作品、和這個職缺有關的經驗」。</p>
         </div>
 

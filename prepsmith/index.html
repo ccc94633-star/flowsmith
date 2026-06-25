@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Workflows for Vue 教學</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a href="../README.md" class="back-link">Back to FlowSmith</a>
+      <div class="brand">
+        <h1>AI Workflows for Vue</h1>
+        <p>從表單、Prompt、API 到串流回應的完整整合教學</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="tutorial-layout">
+    <section class="hero-panel">
+      <p class="eyebrow">Vue 3 + AI API + Workflow Design</p>
+      <h2>把一個 AI 想法做成可重複使用的 Vue 工作流</h2>
+      <p>
+        這份教學用「面試準備助手」作為範例，帶你把使用者輸入、Prompt 模板、後端 API、
+        串流輸出與結果顯示串成一個完整 AI workflow。
+      </p>
+    </section>
+
+    <section class="content-card">
+      <h2>你會完成什麼</h2>
+      <div class="goal-grid">
+        <div>
+          <h3>1. 輸入層</h3>
+          <p>用 Vue 表單收集公司名稱、職缺 JD、個人背景與輸出需求。</p>
+        </div>
+        <div>
+          <h3>2. Prompt 層</h3>
+          <p>把表單資料組成可維護的 Prompt 模板，而不是把文字散落在程式裡。</p>
+        </div>
+        <div>
+          <h3>3. API 層</h3>
+          <p>透過後端 route 呼叫 AI API，避免把 API key 暴露在瀏覽器。</p>
+        </div>
+        <div>
+          <h3>4. 呈現層</h3>
+          <p>將 AI 回傳內容切成區塊，做成可讀、可複製、可延伸的結果畫面。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2>整體流程</h2>
+      <ol class="steps">
+        <li><strong>定義任務：</strong>先決定這個 workflow 要幫使用者完成什麼事。</li>
+        <li><strong>設計輸入：</strong>只收集 AI 真的需要的欄位，避免表單太大。</li>
+        <li><strong>建立 Prompt：</strong>用固定輸出格式要求 AI 回傳清楚段落。</li>
+        <li><strong>呼叫 API：</strong>由後端處理金鑰、模型、錯誤與串流。</li>
+        <li><strong>顯示結果：</strong>前端接收文字，依照標題或 JSON 結構渲染。</li>
+        <li><strong>迭代品質：</strong>測試不同輸入，回頭調整 Prompt 與 UI。</li>
+      </ol>
+    </section>
+
+    <section class="content-card">
+      <h2>推薦專案結構</h2>
+      <pre><code>ai-workflow-vue/
+├─ src/
+│  ├─ components/
+│  │  ├─ WorkflowForm.vue
+│  │  └─ ResultPanel.vue
+│  ├─ composables/
+│  │  └─ useAiWorkflow.js
+│  ├─ prompts/
+│  │  └─ interviewPrompt.js
+│  ├─ App.vue
+│  └─ main.js
+├─ server/
+│  └─ api/
+│     └─ workflow.post.js
+└─ .env</code></pre>
+      <p class="note">
+        重要原則：前端負責互動，Prompt 獨立管理，後端負責 AI API。這樣之後要換模型或新增 workflow 會簡單很多。
+      </p>
+    </section>
+
+    <section class="content-card">
+      <h2>Step 1：建立 Vue 表單</h2>
+      <p>先做出最小可用的輸入介面。使用者輸入的資料會成為 Prompt 的變數。</p>
+      <pre><code>&lt;script setup&gt;
+import { reactive } from 'vue'
+
+const form = reactive({
+  company: '',
+  jobDescription: '',
+  background: '',
+  outputStyle: '條列式'
+})
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;form class="workflow-form"&gt;
+    &lt;label&gt;
+      公司名稱
+      &lt;input v-model="form.company" placeholder="例如：Google" /&gt;
+    &lt;/label&gt;
+
+    &lt;label&gt;
+      職缺 JD
+      &lt;textarea v-model="form.jobDescription" rows="6" /&gt;
+    &lt;/label&gt;
+
+    &lt;label&gt;
+      個人背景
+      &lt;textarea v-model="form.background" rows="4" /&gt;
+    &lt;/label&gt;
+  &lt;/form&gt;
+&lt;/template&gt;</code></pre>
+    </section>
+
+    <section class="content-card">
+      <h2>Step 2：把 Prompt 獨立成函式</h2>
+      <p>不要把 Prompt 寫在按鈕事件裡。把它抽成函式，之後才好測試、改版和重用。</p>
+      <pre><code>export function buildInterviewPrompt(form) {
+  return `你是一位面試準備教練，請根據以下資料協助候選人準備面試。
+
+公司：${form.company}
+職缺 JD：${form.jobDescription}
+個人背景：${form.background}
+
+請用繁體中文輸出，並固定使用以下格式：
+
+## 公司與職缺分析
+整理公司可能重視的方向與職缺核心任務。
+
+## 技能準備重點
+列出 5 到 8 個候選人需要準備的能力。
+
+## 可能面試題
+提供 5 到 8 題面試問題，並附上回答方向。`
+}</code></pre>
+    </section>
+
+    <section class="content-card">
+      <h2>Step 3：建立 workflow composable</h2>
+      <p>Composable 負責 loading、error、result 狀態，讓元件保持乾淨。</p>
+      <pre><code>import { ref } from 'vue'
+import { buildInterviewPrompt } from '@/prompts/interviewPrompt'
+
+export function useAiWorkflow() {
+  const loading = ref(false)
+  const error = ref('')
+  const result = ref('')
+
+  async function run(form) {
+    loading.value = true
+    error.value = ''
+    result.value = ''
+
+    try {
+      const prompt = buildInterviewPrompt(form)
+
+      const response = await fetch('/api/workflow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      result.value = data.text
+    } catch (err) {
+      error.value = err.message || '產生失敗，請稍後再試'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { loading, error, result, run }
+}</code></pre>
+    </section>
+
+    <section class="content-card">
+      <h2>Step 4：後端 API route</h2>
+      <p>API key 必須放在後端環境變數。下面是 Node/Nitro 風格的範例，可用在 Nuxt 或類似 server route 架構。</p>
+      <pre><code>export default defineEventHandler(async (event) =&gt; {
+  const { prompt } = await readBody(event)
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+
+  if (!response.ok) {
+    throw createError({
+      statusCode: response.status,
+      statusMessage: 'AI API request failed'
+    })
+  }
+
+  const data = await response.json()
+  const text = data.content.map((block) =&gt; block.text || '').join('\n')
+
+  return { text }
+})</code></pre>
+    </section>
+
+    <section class="content-card">
+      <h2>Step 5：在 Vue 頁面整合</h2>
+      <pre><code>&lt;script setup&gt;
+import { reactive } from 'vue'
+import { useAiWorkflow } from '@/composables/useAiWorkflow'
+
+const form = reactive({
+  company: '',
+  jobDescription: '',
+  background: '',
+  outputStyle: '條列式'
+})
+
+const { loading, error, result, run } = useAiWorkflow()
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;WorkflowForm v-model="form" /&gt;
+
+  &lt;button :disabled="loading" @click="run(form)"&gt;
+    {{ loading ? '產生中...' : '產生面試準備內容' }}
+  &lt;/button&gt;
+
+  &lt;p v-if="error" class="error"&gt;{{ error }}&lt;/p&gt;
+  &lt;ResultPanel v-if="result" :content="result" /&gt;
+&lt;/template&gt;</code></pre>
+    </section>
+
+    <section class="content-card">
+      <h2>Step 6：結果呈現策略</h2>
+      <p>初期可以直接顯示 Markdown；作品集版本則建議拆成卡片，讓結果更容易閱讀。</p>
+      <ul class="check-list">
+        <li>簡單版：直接用 Markdown renderer 顯示完整文字。</li>
+        <li>進階版：要求 AI 用固定標題，再用標題切出三個區塊。</li>
+        <li>穩定版：要求 AI 回傳 JSON，再用 schema 驗證後渲染。</li>
+      </ul>
+    </section>
+
+    <section class="content-card">
+      <h2>進階：串流輸出</h2>
+      <p>如果內容較長，可以改成 streaming，讓使用者邊等邊看到結果。流程是後端讀取 AI stream，前端用 reader 逐段接收。</p>
+      <pre><code>const reader = response.body.getReader()
+const decoder = new TextDecoder()
+
+while (true) {
+  const { done, value } = await reader.read()
+  if (done) break
+
+  result.value += decoder.decode(value, { stream: true })
+}</code></pre>
+      <p class="note">
+        串流適合內容生成、分析報告、長文摘要。若結果必須是嚴格 JSON，通常先用非串流會比較穩。
+      </p>
+    </section>
+
+    <section class="content-card">
+      <h2>安全與作品集注意事項</h2>
+      <ul class="check-list">
+        <li>不要把 API key 寫在 Vue 前端程式碼。</li>
+        <li>作品集 demo 可以用假資料或 mock API，避免訪客消耗你的額度。</li>
+        <li>Prompt 裡要明確要求輸出格式，減少前端解析失敗。</li>
+        <li>錯誤訊息要讓使用者知道可以怎麼修正，例如缺欄位、API 失敗、內容過長。</li>
+        <li>若要正式部署，建議加上 rate limit、登入或每日使用次數限制。</li>
+      </ul>
+    </section>
+
+    <section class="content-card">
+      <h2>你的練習順序</h2>
+      <ol class="steps">
+        <li>先做純 Vue 表單，不串 AI。</li>
+        <li>把表單資料印出成 Prompt，確認文字正確。</li>
+        <li>建立後端 API route，先回傳假資料。</li>
+        <li>接上真實 AI API，確認錯誤處理。</li>
+        <li>把結果切成可展示的卡片。</li>
+        <li>最後再補截圖、README、部署連結。</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>

@@ -75,7 +75,7 @@ onUnmounted(() => {
         <p class="eyebrow">Tools</p>
         <div class="section-title-row">
           <h2>目前所有 AI 工具</h2>
-          <p>這裡會持續新增我做的 AI 小工具。每張卡片都可以進入對應作品。</p>
+          <p>這裡會持續新增我做的 AI 小工具</p>
         </div>
       </div>
 

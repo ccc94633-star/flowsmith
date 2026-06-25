@@ -13,6 +13,11 @@ const form = reactive({
 const prompt = ref('');
 const copyStatus = ref('');
 const promptPanel = ref(null);
+const ownerCode = ref('');
+const aiAnswer = ref('');
+const aiError = ref('');
+const isAiLoading = ref(false);
+
 
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -85,6 +90,39 @@ async function copyPrompt() {
 
   await navigator.clipboard.writeText(prompt.value);
   copyStatus.value = '已複製 Prompt，可以貼到 AI 工具測試。';
+}
+
+async function askAi() {
+  if (!prompt.value) return;
+
+  aiAnswer.value = '';
+  aiError.value = '';
+  isAiLoading.value = true;
+
+  try {
+    const res = await fetch('/api/interview-prep', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: prompt.value,
+        ownerCode: ownerCode.value,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'AI 回覆產生失敗');
+    }
+
+    aiAnswer.value = data.answer;
+  } catch (error) {
+    aiError.value = error.message;
+  } finally {
+    isAiLoading.value = false;
+  }
 }
 </script>
 
@@ -165,6 +203,35 @@ async function copyPrompt() {
           <button type="button" @click="copyPrompt">複製 Prompt</button>
         </div>
         <p class="copy-status" aria-live="polite">{{ copyStatus }}</p>
+      </section>
+      
+      <div v-if="prompt" class="tool-card owner-panel">
+        <label>
+          站長模式
+          <input
+            v-model="ownerCode"
+            type="password"
+            placeholder="輸入管理密碼後可取得 AI 回覆"
+            autocomplete="off"
+          >
+        </label>
+        <div class="actions">
+          <button type="button" @click="askAi" :disabled="isAiLoading || !ownerCode">
+            {{ isAiLoading ? 'AI 產生中...' : '取得 AI 回覆' }}
+          </button>
+        </div>
+        <p v-if="aiError" class="copy-status">{{ aiError }}</p>
+      </div>
+
+      <section v-if="aiAnswer" class="tool-card result-card">
+        <div class="section-title">
+          <span>03</span>
+          <div>
+            <p class="eyebrow">AI Answer</p>
+            <h2>AI 面試準備建議</h2>
+          </div>
+        </div>
+        <pre class="prompt-box"><code>{{ aiAnswer }}</code></pre>
       </section>
 
       <RelatedTools v-if="prompt" />

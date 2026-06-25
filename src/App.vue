@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import AppNav from './components/AppNav.vue';
+import faviconUrl from '/public/favicon.png';
 import GoTopButton from './components/GoTopButton.vue';
 import ComingSoonView from './views/ComingSoonView.vue';
 import HomeView from './views/HomeView.vue';
@@ -98,7 +99,7 @@ a {
 <template>
   <AppNav
     home-href="#"
-    icon-src="/favicon.png"
+    :icon-src="faviconUrl"
     :links="navLinks"
   />
 

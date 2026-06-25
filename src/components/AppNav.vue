@@ -6,7 +6,7 @@ defineProps({
   },
   iconSrc: {
     type: String,
-    default: '/favicon.png',
+    default: '',
   },
   links: {
     type: Array,

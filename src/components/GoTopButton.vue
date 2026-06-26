@@ -1,7 +1,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 
-const props = defineProps({ alwaysVisible: { type: Boolean, default: false } });
+const props = defineProps({
+  alwaysVisible: { type: Boolean, default: false },
+  enabled: { type: Boolean, default: true },
+});
 
 const scrolled = ref(false);
 
@@ -13,7 +16,7 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-const visible = computed(() => props.alwaysVisible || scrolled.value);
+const visible = computed(() => props.enabled && (props.alwaysVisible || scrolled.value));
 
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }));
 onUnmounted(() => window.removeEventListener('scroll', onScroll));

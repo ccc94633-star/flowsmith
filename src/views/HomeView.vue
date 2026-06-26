@@ -1,16 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 import SlideNav from '../components/SlideNav.vue'
-
-const projectCards = [
-  {
-    tag: 'AI 小工具',
-    title: 'Interview Prep AI',
-    desc: '面試準備小工具。貼上職缺 JD 與一頁式履歷重點，先產生可測試的面試準備 Prompt，下一階段會接上 AI 分析結果。',
-    href: '#/interview-prep',
-    featured: true,
-  },
-]
+import { projectCards as homeProjectCards } from '../data/projectCards'
 
 const isMobile = ref(false)
 const currentCard = ref(0)
@@ -40,7 +31,7 @@ onUnmounted(() => {
           練習把輸入、Prompt、AI 回應與介面整理成完整流程。
         </p>
         <div class="hero-actions">
-          <a class="button" href="#tools">查看目前工具</a>
+          <a class="button" href="#/#tools">查看目前工具</a>
           <a class="button" href="#/readme">使用說明書</a>
         </div>
       </div>
@@ -81,7 +72,7 @@ onUnmounted(() => {
 
       <div class="project-grid">
         <article
-          v-for="(card, i) in projectCards"
+          v-for="(card, i) in homeProjectCards"
           :key="card.href"
           class="project-card"
           :class="{ 'featured-card': card.featured }"
@@ -96,10 +87,10 @@ onUnmounted(() => {
         </article>
       </div>
 
-      <div v-if="isMobile && projectCards.length > 1" class="carousel-nav-wrap">
+      <div v-if="isMobile && homeProjectCards.length > 1" class="carousel-nav-wrap">
         <SlideNav
           :current="currentCard"
-          :total="projectCards.length"
+          :total="homeProjectCards.length"
           @prev="currentCard--"
           @next="currentCard++"
         />
@@ -110,8 +101,8 @@ onUnmounted(() => {
       <p class="eyebrow">Ideas</p>
       <h2>之後想加入的工具</h2>
       <ul class="tool-list">
-        <li>履歷優化助手</li>
-        <li>Email 草稿產生器</li>
+        <li>長輩最愛！早安圖自動產生機</li>
+        <li>有什麼好吃的？美食雷達偵測機</li>
         <li>會議摘要工具</li>
         <li>社群貼文產生器</li>
         <li>旅遊行程規劃工具</li>

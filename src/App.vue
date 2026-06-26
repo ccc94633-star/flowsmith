@@ -1,35 +1,40 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { RouterView, useRoute } from 'vue-router';
 import AppNav from './components/AppNav.vue';
 import faviconUrl from '/public/favicon.png';
 import GoTopButton from './components/GoTopButton.vue';
-import ComingSoonView from './views/ComingSoonView.vue';
-import HomeView from './views/HomeView.vue';
-import InterviewPrepView from './views/InterviewPrepView.vue';
-import ReadmeView from './views/ReadmeView.vue';
+import { projectCards } from './data/projectCards';
 
-const route = ref(window.location.hash || '');
+const route = useRoute();
+const alwaysShowGoTop = computed(() => route.path !== '/');
+const isMobile = ref(false);
 
-function syncRoute() {
-  route.value = window.location.hash || '';
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 680;
 }
 
+const homeHasEnoughToolsForGoTop = computed(() => {
+  return isMobile.value ? projectCards.length > 1 : projectCards.length > 2;
+});
+
+const enableGoTop = computed(() => {
+  return route.path !== '/' || homeHasEnoughToolsForGoTop.value;
+});
+
 onMounted(() => {
-  window.addEventListener('hashchange', syncRoute);
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('hashchange', syncRoute);
+  window.removeEventListener('resize', checkMobile);
 });
 
-const isInterviewPrep = computed(() => route.value === '#/interview-prep');
-const isReadme = computed(() => route.value === '#/readme');
-const isComingSoon = computed(() => ['#/resume-helper', '#/study-notes'].includes(route.value));
-
 const navLinks = [
-  { label: 'tools', href: '#tools' },
-  { label: 'workflow', href: '#workflow' },
-  { label: 'ideas', href: '#ideas' },
+  { label: 'tools', href: '#/#tools' },
+  { label: 'workflow', href: '#/#workflow' },
+  { label: 'ideas', href: '#/#ideas' },
 ];
 </script>
 
@@ -98,15 +103,15 @@ a {
 
 <template>
   <AppNav
-    home-href="#"
+    home-href="#/"
     :icon-src="faviconUrl"
     :links="navLinks"
   />
 
-  <InterviewPrepView v-if="isInterviewPrep" />
-  <ReadmeView v-else-if="isReadme" />
-  <ComingSoonView v-else-if="isComingSoon" />
-  <HomeView v-else />
+  <RouterView />
 
-  <GoTopButton :always-visible="isInterviewPrep || isComingSoon || isReadme" />
+  <GoTopButton
+    :always-visible="alwaysShowGoTop"
+    :enabled="enableGoTop"
+  />
 </template>

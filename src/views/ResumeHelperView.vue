@@ -1,88 +1,99 @@
 <script setup>
 import { nextTick, onMounted, reactive, ref } from 'vue';
-import RelatedTools from '../components/RelatedTools.vue';
+import RelatedTools from '@/components/RelatedTools.vue';
 
 const form = reactive({
-  company: '',
-  role: '',
-  jobDescription: '',
-  background: '',
-  focus: '整體面試準備',
+  interviewPrepMd: '',
+  outputType: 'word',
+  extraRequest: '',
 });
 
 const prompt = ref('');
 const copyStatus = ref('');
+const fileStatus = ref('');
 const promptPanel = ref(null);
 const ownerCode = ref('');
 const aiAnswer = ref('');
 const aiError = ref('');
 const isAiLoading = ref(false);
 
-
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'instant' });
 });
 
+function outputLabel() {
+  return form.outputType === 'pdf' ? 'PDF' : 'Word';
+}
+
 function buildPrompt() {
-  return `你是一位專業的面試準備教練。請根據以下資料，協助候選人準備面試。
+  return `你是一位熟悉前端工程師求職、履歷策略與職缺對照分析的履歷優化顧問。
 
-【公司名稱】
-${form.company}
+我會提供一份「面試準備 MD」，這份 MD 是另一個工具根據公司、職缺 JD、履歷重點產生的面試準備手冊。
+如果使用者貼上的內容看起來只是面試準備機產生的 Prompt，而不是 AI 回覆的完整面試準備 MD，請先提醒使用者：需要先把面試準備 Prompt 送給 AI，取得 AI 回覆的 Markdown 後，再回到履歷優化助手。
+請你先解析這份 MD，但不要重新產生完整的面試準備內容。請只擷取會影響履歷改寫的依據：
 
-【職缺名稱】
-${form.role}
+1. 目標公司與職缺名稱
+2. 這間公司 / 這個職缺最重視的能力
+3. 候選人履歷中最應該被強化的亮點
+4. 需要弱化、刪減或避免過度鋪陳的內容
+5. 面試官可能在意的疑慮與加分點
+6. 履歷應該調整的敘事方向
 
-【職缺 JD / 工作內容】
-${form.jobDescription}
+接著，請根據以上分析，產出適合整理成「${outputLabel()}」的履歷優化內容。
 
-【履歷重點】
-${form.background || '未提供。請根據職缺需求，給出通用但具體的準備方向。'}
+【輸出類型】
+${outputLabel()}
 
-【想加強的方向】
-${form.focus}
+【補充要求】
+${form.extraRequest || '未提供。請根據面試準備 MD 自行判斷最適合強調的方向。'}
 
-請用繁體中文輸出，內容要具體、實用、適合面試前準備。
+【面試準備 MD】
+${form.interviewPrepMd}
 
-請固定使用以下格式：
+請用繁體中文輸出，並固定使用以下格式：
 
-## 1. 公司與職缺重點
-用 3 到 5 點整理這個職缺可能重視的能力、工作重點與面試官可能在意的事。
+## 1. 履歷改寫依據摘要
+請根據面試準備 MD，擷取會影響履歷改寫的重點即可，不要重新產生完整面試準備內容。
+請整理：
+- 這間公司 / 職缺最重視的能力
+- 候選人履歷中最應該強化的亮點
+- 需要弱化或刪減的內容
+- 面試官可能在意的疑慮
+- 最適合這份履歷的敘事方向
 
-## 2. 履歷對照分析
-根據我的履歷重點，分析哪些經驗最適合拿來對應這個職缺。
+## 2. 履歷優化策略
+請說明這份履歷應該優先強調什麼、弱化什麼、刪減什麼，以及原因。
 
-## 3. 準備策略
-依照「${form.focus}」這個方向，列出我應該優先準備的內容。
+## 3. ${outputLabel()} 履歷內容草稿
+請產出可以直接整理成 ${outputLabel()} 的履歷內容。段落要清楚，語氣專業，適合投遞該職缺。
 
-## 4. 可能面試問題
-提供 8 題可能被問到的問題，每題附上回答提示。
+## 4. 修改前後差異說明
+請說明你做了哪些改寫，以及這些改寫如何對應該公司與職缺。
 
-## 5. 回答包裝建議
-建議我如何介紹自己的作品、經驗、轉職動機或學習歷程。
-
-## 6. 面試前檢查清單
-列出面試前一天可以檢查的事項。
-
-## 7. 請將你提供的資訊製作成MD檔
-方便後續將資訊深入利用。`;
+## 5. 後續人工檢查清單
+請列出使用者在輸出成 ${outputLabel()} 前應該人工確認的資訊，例如日期、學歷、證照、聯絡方式、作品連結。`;
 }
 
 async function handleSubmit() {
   prompt.value = buildPrompt();
   copyStatus.value = '';
+  aiAnswer.value = '';
+  aiError.value = '';
 
   await nextTick();
   promptPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function resetForm() {
-  form.company = '';
-  form.role = '';
-  form.jobDescription = '';
-  form.background = '';
-  form.focus = '整體面試準備';
+  form.interviewPrepMd = '';
+  form.outputType = 'word';
+  form.extraRequest = '';
   prompt.value = '';
   copyStatus.value = '';
+  fileStatus.value = '';
+  ownerCode.value = '';
+  aiAnswer.value = '';
+  aiError.value = '';
 }
 
 async function copyPrompt() {
@@ -92,37 +103,31 @@ async function copyPrompt() {
   copyStatus.value = '已複製 Prompt，可以貼到 AI 工具測試。';
 }
 
-async function askAi() {
+async function importPrepFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const validTypes = ['text/markdown', 'text/plain', ''];
+  const validExtensions = ['.md', '.txt'];
+  const hasValidExtension = validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+
+  if (!validTypes.includes(file.type) && !hasValidExtension) {
+    fileStatus.value = '請匯入 .md 或 .txt 檔案。';
+    event.target.value = '';
+    return;
+  }
+
+  form.interviewPrepMd = await file.text();
+  fileStatus.value = `已匯入：${file.name}`;
+  event.target.value = '';
+}
+
+function askAi() {
   if (!prompt.value) return;
 
   aiAnswer.value = '';
-  aiError.value = '';
-  isAiLoading.value = true;
-
-  try {
-    const res = await fetch('/api/interview-prep', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: prompt.value,
-        ownerCode: ownerCode.value,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'AI 回覆產生失敗');
-    }
-
-    aiAnswer.value = data.answer;
-  } catch (error) {
-    aiError.value = error.message;
-  } finally {
-    isAiLoading.value = false;
-  }
+  aiError.value = '下一階段會串接履歷優化 API，目前請先複製 Prompt 測試。';
+  isAiLoading.value = false;
 }
 </script>
 
@@ -130,54 +135,75 @@ async function askAi() {
   <main>
     <section class="hero hero-tool">
       <div class="hero-copy">
-        <p class="eyebrow">Interview Prep Tool</p>
-        <h1>面試準備機</h1>
-        <p>貼上職缺資訊和履歷重點，整理成可測試的面試準備 Prompt。</p>
+        <p class="eyebrow">Resume Helper</p>
+        <h1>履歷優化助手</h1>
+        <p>匯入面試準備 MD，讓 AI 根據職缺重點整理更貼近公司的履歷版本。</p>
       </div>
     </section>
 
     <section class="workspace">
+      <section class="tool-card guide-card">
+        <div class="guide-copy">
+          <p class="eyebrow">Before You Start</p>
+          <h2>請先取得 AI 回覆的面試準備 MD</h2>
+          <ol class="workflow-steps">
+            <li>
+              <strong>01 產生面試準備 Prompt</strong>
+              <span>到面試準備機輸入公司、職缺 JD 與履歷重點，產生 Prompt。</span>
+            </li>
+            <li>
+              <strong>02 取得面試準備 MD</strong>
+              <span>將 Prompt 傳給 AI，取得完整的面試準備 Markdown。</span>
+            </li>
+            <li>
+              <strong>03 匯入履歷優化助手</strong>
+              <span>把 AI 回覆的 Markdown 貼到本頁，或匯入 .md / .txt 檔案。</span>
+            </li>
+          </ol>
+        </div>
+        <a class="button" href="#/interview-prep">還沒拿到面試準備的 Prompt嗎？</a>
+      </section>
+
       <form class="tool-card form-card" @submit.prevent="handleSubmit">
         <div class="section-title">
           <span>01</span>
           <div>
             <p class="eyebrow">Input</p>
-            <h2>輸入面試資料</h2>
+            <h2>匯入面試準備資料</h2>
           </div>
         </div>
 
         <label>
-          公司名稱
-          <input v-model="form.company" type="text" placeholder="例如：Google、台積電、某某新創" required>
+          面試準備 MD
+          <textarea
+            v-model="form.interviewPrepMd"
+            rows="12"
+            placeholder="請貼上「AI 回覆的面試準備 Markdown」，不是面試準備機產生的 Prompt。流程：先用面試準備機產生 Prompt → 將 Prompt 送給 AI → 將 AI 回覆的 MD 貼到這裡。"
+            required
+          ></textarea>
         </label>
 
-        <label>
-          職缺名稱
-          <input v-model="form.role" type="text" placeholder="例如：Frontend Engineer、UI Designer" required>
+        <label class="file-import">
+          或匯入 .md / .txt 檔案
+          <input type="file" accept=".md,.txt,text/markdown,text/plain" @change="importPrepFile">
         </label>
+        <p class="file-status" aria-live="polite">{{ fileStatus }}</p>
 
         <label>
-          職缺 JD / 工作內容
-          <textarea v-model="form.jobDescription" rows="7" placeholder="貼上職缺描述、必要技能、加分條件..." required></textarea>
-        </label>
-
-        <label>
-          履歷重點
-          <textarea v-model="form.background" rows="8" placeholder="建議貼：1. 你的定位 2. 主要技能 3. 代表作品 4. 工作/專案經驗 5. 想強調的優勢"></textarea>
-        </label>
-
-        <div class="note-box">
-          <strong>履歷重點可以這樣貼：</strong>
-          <p>不用貼完整格式，直接貼重點即可，例如「我是誰、會什麼、做過哪些作品、和這個職缺有關的經驗」。</p>
-        </div>
-
-        <label>
-          想加強的方向
-          <select v-model="form.focus">
-            <option value="整體面試準備">整體面試準備</option>
-            <option value="技術面試">技術面試</option>
-            <option value="行為面試">行為面試</option>
+          輸出類型
+          <select v-model="form.outputType">
+            <option value="word">Word</option>
+            <option value="pdf">PDF</option>
           </select>
+        </label>
+
+        <label>
+          補充要求
+          <textarea
+            v-model="form.extraRequest"
+            rows="5"
+            placeholder="選填。例如：請更強調 Vue 3、AI API 串接、台中穩定度；或希望語氣更正式、更適合新人轉職。"
+          ></textarea>
         </label>
 
         <div class="actions">
@@ -203,17 +229,6 @@ async function askAi() {
         <p class="copy-status" aria-live="polite">{{ copyStatus }}</p>
       </section>
 
-      <section v-if="prompt" class="tool-card next-step-card">
-        <div>
-          <p class="eyebrow">Next Step</p>
-          <h2>把面試資料變成更貼近職缺的履歷</h2>
-          <p>得到面試準備的資料了，下一步，把履歷整理成更貼近職缺的版本吧！</p>
-        </div>
-        <a class="button" href="#/resume-helper">前往履歷優化助手</a>
-      </section>
-
-      <RelatedTools v-if="prompt" />
-      
       <div v-if="prompt" class="tool-card owner-panel">
         <label>
           站長模式
@@ -237,13 +252,13 @@ async function askAi() {
           <span>03</span>
           <div>
             <p class="eyebrow">AI Answer</p>
-            <h2>AI 面試準備建議</h2>
+            <h2>AI 履歷優化建議</h2>
           </div>
         </div>
         <pre class="prompt-box"><code>{{ aiAnswer }}</code></pre>
       </section>
 
-      
+      <RelatedTools />
     </section>
   </main>
 </template>
@@ -268,8 +283,7 @@ main {
 }
 
 h1,
-h2,
-h3 {
+h2 {
   letter-spacing: 0;
   color: var(--green);
 }
@@ -334,6 +348,38 @@ h2 {
   backdrop-filter: blur(16px);
 }
 
+.guide-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.guide-copy {
+  flex: 1 1 auto;
+}
+
+.workflow-steps {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.workflow-steps li {
+  display: grid;
+  gap: 2px;
+}
+
+.workflow-steps strong {
+  color: var(--green);
+  font-size: 14px;
+}
+
+.workflow-steps span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .form-card {
   width: 100%;
   display: grid;
@@ -342,26 +388,6 @@ h2 {
 
 .result-card {
   width: 100%;
-}
-
-.next-step-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  background:
-    linear-gradient(rgba(255, 255, 250, .88), rgba(255, 255, 250, .9)),
-    url("../images/background-imgs/spring-table.jpg") center 58% / cover;
-}
-
-.next-step-card h2 {
-  margin-bottom: 8px;
-}
-
-.next-step-card p:not(.eyebrow) {
-  max-width: 52ch;
-  color: var(--muted);
-  font-size: 16px;
 }
 
 .section-title {
@@ -416,21 +442,16 @@ select:focus {
   border-color: rgba(168, 131, 30, .55);
 }
 
-.note-box {
-  padding: 14px 15px;
-  background: rgba(238, 244, 231, .66);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+.file-import input {
+  padding: 10px;
 }
 
-.note-box strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--green);
-}
-
-.note-box p {
-  color: var(--muted);
+.file-status,
+.copy-status {
+  min-height: 22px;
+  color: #6d560d;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .actions {
@@ -463,6 +484,11 @@ button:hover,
   background: #1f352b;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: .62;
+}
+
 button.secondary {
   color: var(--green);
   background: rgba(255, 255, 250, .74);
@@ -491,13 +517,6 @@ button.secondary:hover {
   white-space: pre-wrap;
 }
 
-.copy-status {
-  min-height: 22px;
-  color: #6d560d;
-  font-size: 14px;
-  font-weight: 800;
-}
-
 @media (max-width: 680px) {
   main {
     padding: 22px 16px 52px;
@@ -508,7 +527,7 @@ button.secondary:hover {
     padding: 22px;
   }
 
-  .next-step-card {
+  .guide-card {
     align-items: flex-start;
     flex-direction: column;
   }

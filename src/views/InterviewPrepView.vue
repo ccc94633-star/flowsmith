@@ -124,6 +124,13 @@ async function askAi() {
     isAiLoading.value = false;
   }
 }
+
+function sendAnswerToResumeHelper() {
+  if (!aiAnswer.value) return;
+
+  sessionStorage.setItem('flowsmith.interviewPrepMd', aiAnswer.value);
+  window.location.hash = '#/resume-helper';
+}
 </script>
 
 <template>
@@ -241,6 +248,9 @@ async function askAi() {
           </div>
         </div>
         <pre class="prompt-box"><code>{{ aiAnswer }}</code></pre>
+        <div class="actions">
+          <button type="button" @click="sendAnswerToResumeHelper">用這份面試準備 MD 優化履歷</button>
+        </div>
       </section>
 
       

@@ -3,7 +3,13 @@ import { nextTick, onMounted, reactive, ref } from 'vue';
 import RelatedTools from '@/components/RelatedTools.vue';
 
 const form = reactive({
+  mode: 'fromMd',
   interviewPrepMd: '',
+  company: '',
+  role: '',
+  jobDescription: '',
+  background: '',
+  focus: '整體履歷優化',
   outputType: 'word',
   extraRequest: '',
 });
@@ -19,13 +25,20 @@ const isAiLoading = ref(false);
 
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'instant' });
+
+  const savedInterviewPrepMd = sessionStorage.getItem('flowsmith.interviewPrepMd');
+  if (savedInterviewPrepMd) {
+    form.mode = 'fromMd';
+    form.interviewPrepMd = savedInterviewPrepMd;
+    fileStatus.value = '已從面試準備機帶入 AI 回覆的面試準備 MD。';
+  }
 });
 
 function outputLabel() {
   return form.outputType === 'pdf' ? 'PDF' : 'Word';
 }
 
-function buildPrompt() {
+function buildPromptFromMd() {
   return `你是一位熟悉前端工程師求職、履歷策略與職缺對照分析的履歷優化顧問。
 
 我會提供一份「面試準備 MD」，這份 MD 是另一個工具根據公司、職缺 JD、履歷重點產生的面試準備手冊。
@@ -74,6 +87,68 @@ ${form.interviewPrepMd}
 請列出使用者在輸出成 ${outputLabel()} 前應該人工確認的資訊，例如日期、學歷、證照、聯絡方式、作品連結。`;
 }
 
+function buildPromptFromJobInfo() {
+  return `你是一位熟悉前端工程師求職、履歷策略與職缺對照分析的履歷優化顧問。
+
+因此請你根據公司、職缺 JD 與履歷重點，完成「職缺理解 → 履歷改寫依據 → 履歷內容草稿」的整合流程。
+
+【公司名稱】
+${form.company}
+
+【職缺名稱】
+${form.role}
+
+【職缺 JD / 工作內容】
+${form.jobDescription}
+
+【履歷重點】
+${form.background || '未提供。請根據職缺需求，給出通用但具體的履歷調整方向。'}
+
+【想加強的方向】
+${form.focus}
+
+【輸出類型】
+${outputLabel()}
+
+【補充要求】
+${form.extraRequest || '未提供。請根據職缺與履歷重點自行判斷最適合強調的方向。'}
+
+請用繁體中文輸出，內容要具體、實用，並固定使用以下格式：
+
+## 1. 職缺理解摘要
+請整理這間公司 / 職缺最重視的能力、技能需求、軟實力需求、加分條件與隱含期待。
+
+## 2. 履歷改寫依據
+請根據職缺需求與履歷重點，整理：
+- 候選人履歷中最應該強化的亮點
+- 需要弱化或刪減的內容
+- 面試官可能在意的疑慮
+- 最適合這份履歷的敘事方向
+
+## 3. 履歷優化策略
+請說明這份履歷應該優先強調什麼、弱化什麼、刪減什麼，以及原因。
+
+## 4. ${outputLabel()} 履歷內容草稿
+請產出可以直接整理成 ${outputLabel()} 的履歷內容。段落要清楚，語氣專業，適合投遞該職缺。
+
+## 5. 修改前後差異說明
+請說明你做了哪些改寫，以及這些改寫如何對應該公司與職缺。
+
+## 6. 後續人工檢查清單
+請列出使用者在輸出成 ${outputLabel()} 前應該人工確認的資訊，例如日期、學歷、證照、聯絡方式、作品連結。
+
+## 7. 請將以上資訊做成MD檔
+讓使用者方便將資料作後續利用`;
+}
+
+function buildPrompt() {
+  if (form.mode === 'fromMd') {
+    return buildPromptFromMd();
+  }
+
+  return buildPromptFromJobInfo();
+}
+
 async function handleSubmit() {
   prompt.value = buildPrompt();
   copyStatus.value = '';
@@ -85,7 +160,13 @@ async function handleSubmit() {
 }
 
 function resetForm() {
+  form.mode = 'fromMd';
   form.interviewPrepMd = '';
+  form.company = '';
+  form.role = '';
+  form.jobDescription = '';
+  form.background = '';
+  form.focus = '整體履歷優化';
   form.outputType = 'word';
   form.extraRequest = '';
   prompt.value = '';
@@ -142,52 +223,92 @@ function askAi() {
     </section>
 
     <section class="workspace">
-      <section class="tool-card guide-card">
-        <div class="guide-copy">
-          <p class="eyebrow">Before You Start</p>
-          <h2>請先取得 AI 回覆的面試準備 MD</h2>
-          <ol class="workflow-steps">
-            <li>
-              <strong>01 產生面試準備 Prompt</strong>
-              <span>到面試準備機輸入公司、職缺 JD 與履歷重點，產生 Prompt。</span>
-            </li>
-            <li>
-              <strong>02 取得面試準備 MD</strong>
-              <span>將 Prompt 傳給 AI，取得完整的面試準備 Markdown。</span>
-            </li>
-            <li>
-              <strong>03 匯入履歷優化助手</strong>
-              <span>把 AI 回覆的 Markdown 貼到本頁，或匯入 .md / .txt 檔案。</span>
-            </li>
-          </ol>
-        </div>
-        <a class="button" href="#/interview-prep">還沒拿到面試準備的 Prompt嗎？</a>
-      </section>
-
       <form class="tool-card form-card" @submit.prevent="handleSubmit">
         <div class="section-title">
           <span>01</span>
           <div>
             <p class="eyebrow">Input</p>
-            <h2>匯入面試準備資料</h2>
+            <h2>選擇開始方式</h2>
           </div>
         </div>
 
-        <label>
-          面試準備 MD
-          <textarea
-            v-model="form.interviewPrepMd"
-            rows="12"
-            placeholder="請貼上「AI 回覆的面試準備 Markdown」，不是面試準備機產生的 Prompt。流程：先用面試準備機產生 Prompt → 將 Prompt 送給 AI → 將 AI 回覆的 MD 貼到這裡。"
-            required
-          ></textarea>
-        </label>
+        <fieldset class="mode-options">
+          <legend>你想怎麼開始？</legend>
+          <label class="mode-option">
+            <input v-model="form.mode" type="radio" value="fromMd">
+            <span>
+              <strong>我已經有面試準備 MD</strong>
+              <small>貼上或匯入 AI 回覆的 Markdown，直接進入履歷優化。</small>
+            </span>
+          </label>
+          <label class="mode-option">
+            <input v-model="form.mode" type="radio" value="fromJobInfo">
+            <span>
+              <strong>我還沒有，從職缺資料開始</strong>
+              <small>直接輸入公司、職缺 JD 與履歷重點，在本頁完成整合流程。</small>
+            </span>
+          </label>
+        </fieldset>
 
-        <label class="file-import">
-          或匯入 .md / .txt 檔案
-          <input type="file" accept=".md,.txt,text/markdown,text/plain" @change="importPrepFile">
-        </label>
-        <p class="file-status" aria-live="polite">{{ fileStatus }}</p>
+        <template v-if="form.mode === 'fromMd'">
+          <label>
+            面試準備 MD
+            <textarea
+              v-model="form.interviewPrepMd"
+              rows="12"
+              placeholder="請貼上「AI 回覆的面試準備 Markdown」，不是面試準備機產生的 Prompt。流程：先用面試準備機產生 Prompt → 將 Prompt 送給 AI → 將 AI 回覆的 MD 貼到這裡。"
+              required
+            ></textarea>
+          </label>
+
+          <label class="file-import">
+            或匯入 .md / .txt 檔案
+            <input type="file" accept=".md,.txt,text/markdown,text/plain" @change="importPrepFile">
+          </label>
+          <p class="file-status" aria-live="polite">{{ fileStatus }}</p>
+        </template>
+
+        <template v-else>
+          <label>
+            公司名稱
+            <input v-model="form.company" type="text" placeholder="例如：貼上求職公司名稱" required>
+          </label>
+
+          <label>
+            職缺名稱
+            <input v-model="form.role" type="text" placeholder="例如：前端工程師" required>
+          </label>
+
+          <label>
+            職缺 JD / 工作內容
+            <textarea
+              v-model="form.jobDescription"
+              rows="7"
+              placeholder="貼上職缺描述、必要技能、加分條件、工作內容..."
+              required
+            ></textarea>
+          </label>
+
+          <label>
+            履歷重點
+            <textarea
+              v-model="form.background"
+              rows="8"
+              placeholder="建議貼：你的定位、主要技能、代表作品、工作/專案經驗、轉職故事、想強調的優勢。"
+            ></textarea>
+          </label>
+
+          <label>
+            想加強的方向
+            <select v-model="form.focus">
+              <option value="整體履歷優化">整體履歷優化</option>
+              <option value="前端技術能力">前端技術能力</option>
+              <option value="AI 工具作品">AI 工具作品</option>
+              <option value="轉職故事">轉職故事</option>
+              <option value="跨部門溝通">跨部門溝通</option>
+            </select>
+          </label>
+        </template>
 
         <label>
           輸出類型
@@ -348,38 +469,6 @@ h2 {
   backdrop-filter: blur(16px);
 }
 
-.guide-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.guide-copy {
-  flex: 1 1 auto;
-}
-
-.workflow-steps {
-  display: grid;
-  gap: 10px;
-  list-style: none;
-}
-
-.workflow-steps li {
-  display: grid;
-  gap: 2px;
-}
-
-.workflow-steps strong {
-  color: var(--green);
-  font-size: 14px;
-}
-
-.workflow-steps span {
-  color: var(--muted);
-  font-size: 14px;
-}
-
 .form-card {
   width: 100%;
   display: grid;
@@ -417,6 +506,50 @@ label {
   color: var(--green);
   font-size: 14px;
   font-weight: 700;
+}
+
+.mode-options {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+}
+
+.mode-options legend {
+  margin-bottom: 4px;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.mode-option {
+  min-height: 82px;
+  padding: 14px 15px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(255, 255, 250, .74);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.mode-option input {
+  width: auto;
+  margin-top: 5px;
+}
+
+.mode-option span {
+  display: grid;
+  gap: 2px;
+}
+
+.mode-option small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 input,
@@ -525,11 +658,6 @@ button.secondary:hover {
   .hero,
   .tool-card {
     padding: 22px;
-  }
-
-  .guide-card {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   h1 {

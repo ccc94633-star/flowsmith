@@ -1,14 +1,24 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import SlideNav from './SlideNav.vue'
 
 const relatedCards = [
-  { title: '履歷優化助手',   desc: '把一頁式履歷整理成更貼近職缺的版本',   href: '#/resume-helper', cls: 'resume-card' },
-  { title: '學習筆記整理工具', desc: '把零散筆記整理成可複習的重點架構', href: '#/study-notes',  cls: 'notes-card'  },
+  { title: '履歷優化助手', desc: '把一頁式履歷整理成更貼近職缺的版本', href: '#/resume-helper', path: '/resume-helper', cls: 'resume-card' },
+  { title: '學習筆記整理工具', desc: '把零散筆記整理成可複習的重點架構', href: '#/study-notes', path: '/study-notes', cls: 'notes-card' },
 ]
 
+const route = useRoute()
 const isMobile = ref(false)
 const currentCard = ref(0)
+const visibleCards = computed(() => relatedCards.filter((card) => card.path !== route.path))
+
+watch(
+  () => route.path,
+  () => {
+    currentCard.value = 0
+  },
+)
 
 function checkMobile() {
   isMobile.value = window.innerWidth <= 680
@@ -32,7 +42,7 @@ function onTouchStart(e) {
 function onTouchEnd(e) {
   const dx = e.changedTouches[0].clientX - touchStartX
   if (Math.abs(dx) < 40) return
-  if (dx < 0 && currentCard.value < relatedCards.length - 1) currentCard.value++
+  if (dx < 0 && currentCard.value < visibleCards.value.length - 1) currentCard.value++
   else if (dx > 0 && currentCard.value > 0) currentCard.value--
 }
 </script>
@@ -46,7 +56,7 @@ function onTouchEnd(e) {
       @touchend.passive="onTouchEnd"
     >
       <a
-        v-for="(card, i) in relatedCards"
+        v-for="(card, i) in visibleCards"
         :key="card.href"
         class="related-card"
         :class="card.cls"
@@ -59,10 +69,10 @@ function onTouchEnd(e) {
         </div>
       </a>
     </div>
-    <div v-if="isMobile && relatedCards.length > 1" class="carousel-nav-wrap">
+    <div v-if="isMobile && visibleCards.length > 1" class="carousel-nav-wrap">
       <SlideNav
         :current="currentCard"
-        :total="relatedCards.length"
+        :total="visibleCards.length"
         @prev="currentCard--"
         @next="currentCard++"
       />
